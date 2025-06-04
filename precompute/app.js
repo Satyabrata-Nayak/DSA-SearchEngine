@@ -71,7 +71,7 @@ function search(query, topK = 30) {
   // Sort descending by similarity and take topK
   scoredDocs.sort((a, b) => b.score - a.score);
 
-  return scoredDocs.filter(a=>a.score>0.1).slice(0, topK);
+  return scoredDocs.slice(0, topK);
 }
 
 

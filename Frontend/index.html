@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSA Search Engine</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h2 class="header-title">DSA Search Engine</h2>
+  </header>
+  <div class="container">
+    <h1>DSA Question Search</h1>
+
+    <form id="search-form">
+      <input type="text" id="search-input" placeholder="Search for a DSA question..." />
+      <select id="difficultyInput" class="difficulty-select">
+        <option value="">All Difficulties</option>
+        <option value="Easy">Easy</option>
+        <option value="Medium">Medium</option>
+        <option value="Hard">Hard</option>
+      </select>
+      <button type="submit">Search</button>
+    </form>
+
+    <div id="results">
+      <!-- Search results will appear here -->
+    </div>
+    <div id="loader" class="loader" style="display: none;"></div>
+  </div>
+  
+  <!-- Modal -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span id="close-modal" class="close-button">&times;</span>
+      <h2 id="modal-title">Question Title</h2>
+      <br>
+      <pre id="modal-description">Full problem description will go here...</pre>
+      <a id="modal-link" href="#" target="_blank">Solve on Platform</a>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,109 +1,104 @@
+'use strict';
+
 const fs = require('fs');
 const path = require('path');
-const stopwords = new Set([
-  "a", "an", "the", "and", "or", "but", "if", "while", "with", "of", "at", "by",
-  "for", "to", "in", "on", "from", "up", "down", "out", "over", "under", "again",
-  "further", "then", "once", "here", "there", "all", "any", "both", "each", "few",
-  "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own",
-  "same", "so", "than", "too", "very", "can", "will", "just"
-]);
+const { analyze } = require('./text');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const INDEX_DIR = path.join(__dirname, 'index');
+const NAMES_PATH = path.join(__dirname, 'names.txt');
 
-function tokenize(text) {
-  return text
-    .toLowerCase()
-    .replace(/[.,?!;()"'-]/g, ' ')
-    .split(/\s+/)
-    .filter(word => word && !stopwords.has(word));
+// Field weights: a term in the title is far more indicative than the same term
+// buried in a paragraph of problem statement.
+const W_TITLE = 3;
+const W_TAGS = 2;
+const W_BODY = 1;
+
+// names.txt is ISO-8859-1, not UTF-8; decoding it as UTF-8 mangles the titles
+// that contain non-ASCII bytes.
+function readTitles() {
+  return fs.readFileSync(NAMES_PATH, 'latin1')
+    .split(/\r?\n/)
+    .map(line => line.trim());
 }
 
-function buildVocabulary(docsTokens) {
-  const vocab = {};
-  let idx = 0;
-  docsTokens.forEach(tokens => {
-    tokens.forEach(word => {
-      if (!(word in vocab)) {
-        vocab[word] = idx++;
-      }
-    });
-  });
-  return vocab;
+// data/N.txt is: line 0 = difficulty, line 1 = comma-separated tags, rest = description
+function parseDoc(filePath) {
+  const lines = fs.readFileSync(filePath, 'utf-8').split(/\r?\n/);
+  return {
+    difficulty: (lines[0] || '').trim(),
+    tags: (lines[1] || '').split(',').map(t => t.trim()).filter(Boolean),
+    description: lines.slice(2).join('\n')
+  };
 }
 
-function computeTf(tokens, vocab) {
-  const tf = new Array(Object.keys(vocab).length).fill(0);
-  const counts = {};
-  tokens.forEach(word => {
-    if (word in vocab) {
-      counts[word] = (counts[word] || 0) + 1;
+function addWeighted(counts, tokens, weight) {
+  for (const token of tokens) {
+    counts.set(token, (counts.get(token) || 0) + weight);
+  }
+}
+
+function main() {
+  if (!fs.existsSync(INDEX_DIR)) fs.mkdirSync(INDEX_DIR);
+
+  const titles = readTitles();
+  const files = fs.readdirSync(DATA_DIR)
+    .filter(f => f.endsWith('.txt'))
+    .sort((a, b) => parseInt(a) - parseInt(b));
+
+  const docs = [];
+  const postings = new Map();   // term -> [docIdx, weightedTf, ...]
+  let totalLen = 0;
+
+  files.forEach((file, docIdx) => {
+    const id = parseInt(path.basename(file, '.txt'), 10);
+    const { difficulty, tags, description } = parseDoc(path.join(DATA_DIR, file));
+    const title = titles[id] || '';
+
+    const counts = new Map();
+    addWeighted(counts, analyze(title), W_TITLE);
+    addWeighted(counts, analyze(tags.join(' ')), W_TAGS);
+    addWeighted(counts, analyze(description), W_BODY);
+
+    let len = 0;
+    for (const [term, tf] of counts) {
+      let list = postings.get(term);
+      if (!list) postings.set(term, (list = []));
+      list.push([docIdx, tf]);
+      len += tf;
     }
-  });
-  const totalFreq = tokens.length || 1;
-  Object.entries(counts).forEach(([word, count]) => {
-    tf[vocab[word]] = count / totalFreq;   // <-- changed here
-  });
-  return tf;
-}
 
-function computeIdf(docsTf, vocab) {
-  const nDocs = docsTf.length;
-  const df = new Array(Object.keys(vocab).length).fill(0);
-
-  docsTf.forEach(tfVec => {
-    tfVec.forEach((val, idx) => {
-      if (val > 0) df[idx]++;
-    });
+    totalLen += len;
+    // Metadata travels with the index so filters can be applied during ranking
+    // rather than after the top-K cut.
+    docs.push({ file, id, title, len, difficulty, tags });
   });
 
-  // IDF with smoothing
-  return df.map(dfi => Math.log((nDocs + 1) / (dfi + 1)) + 1);
-}
-
-function multiplyTfIdf(tfVec, idfVec) {
-  return tfVec.map((tfVal, idx) => tfVal * idfVec[idx]);
-}
-
-function saveJSON(filePath, obj) {
-  fs.writeFileSync(filePath, JSON.stringify(obj, null, 2), 'utf-8');
-}
-
-async function main() {
-  if (!fs.existsSync(INDEX_DIR)) {
-    fs.mkdirSync(INDEX_DIR);
+  const df = {};
+  const postingsOut = {};
+  for (const [term, list] of postings) {
+    df[term] = list.length;
+    postingsOut[term] = list;
   }
 
-  const files = fs.readdirSync(DATA_DIR).filter(f => f.endsWith('.txt'));
-  const docsTokens = files.map(file => {
-    const text = fs.readFileSync(path.join(DATA_DIR, file), 'utf-8');
-    return tokenize(text);
-  });
+  const index = {
+    version: 2,
+    N: files.length,
+    avgdl: totalLen / (files.length || 1),
+    docs,
+    df,
+    postings: postingsOut
+  };
 
-  const vocab = buildVocabulary(docsTokens);
-  const vocabSize = Object.keys(vocab).length;
+  const outPath = path.join(INDEX_DIR, 'index.json');
+  fs.writeFileSync(outPath, JSON.stringify(index), 'utf-8');
 
-  // Compute TF vectors for each doc
-  const docsTf = docsTokens.map(tokens => computeTf(tokens, vocab));
-
-  // Compute IDF vector
-  const idfVec = computeIdf(docsTf, vocab);
-
-  // Compute TF-IDF vectors
-  const docsTfIdf = docsTf.map(tfVec => multiplyTfIdf(tfVec, idfVec));
-
-  // Save vocabulary and idf
-  saveJSON(path.join(INDEX_DIR, 'vocabulary.json'), vocab);
-  saveJSON(path.join(INDEX_DIR, 'idf.json'), idfVec);
-
-  // Save docs info with tf-idf vectors
-  const docsIndex = files.map((file, i) => ({
-    file,
-    tfidf: docsTfIdf[i]
-  }));
-  saveJSON(path.join(INDEX_DIR, 'docs_tf_idf.json'), docsIndex);
-
-  console.log('Indexing complete. Vocabulary size:', vocabSize);
+  const sizeMB = fs.statSync(outPath).size / 1048576;
+  console.log('Indexing complete.');
+  console.log('  documents:  ', index.N);
+  console.log('  vocabulary: ', Object.keys(df).length);
+  console.log('  avg doc len:', index.avgdl.toFixed(1));
+  console.log('  index size: ', sizeMB.toFixed(2), 'MB ->', outPath);
 }
 
 main();

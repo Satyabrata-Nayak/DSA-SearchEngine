@@ -1,0 +1,13 @@
+{
+  "name": "precompute",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Corpus indexing and BM25 ranking for the DSA question search engine",
+  "main": "app.js",
+  "type": "commonjs",
+  "scripts": {
+    "reindex": "node indexer.js",
+    "eval": "node eval.js"
+  },
+  "license": "ISC"
+}

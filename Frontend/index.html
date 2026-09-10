@@ -14,22 +14,79 @@
     <h1>DSA Question Search</h1>
 
     <form id="search-form">
-      <input type="text" id="search-input" placeholder="Search for a DSA question..." />
-      <select id="difficultyInput" class="difficulty-select">
+      <input type="text" id="search-input" placeholder="Search for a DSA question..."
+             autocomplete="off" aria-label="Search query" />
+      <select id="difficultyInput" class="difficulty-select" aria-label="Difficulty filter">
         <option value="">All Difficulties</option>
         <option value="Easy">Easy</option>
         <option value="Medium">Medium</option>
         <option value="Hard">Hard</option>
       </select>
+      <select id="tagsInput" class="difficulty-select" aria-label="Tag filter">
+        <option value="">All Tags</option>
+        <option value="Array">Array</option>
+        <option value="Backtracking">Backtracking</option>
+        <option value="Binary Indexed Tree">Binary Indexed Tree</option>
+        <option value="Binary Search">Binary Search</option>
+        <option value="Binary Search Tree">Binary Search Tree</option>
+        <option value="Binary Tree">Binary Tree</option>
+        <option value="Bit Manipulation">Bit Manipulation</option>
+        <option value="Bitmask">Bitmask</option>
+        <option value="Brainteaser">Brainteaser</option>
+        <option value="Breadth-First Search">Breadth-First Search</option>
+        <option value="Combinatorics">Combinatorics</option>
+        <option value="Counting">Counting</option>
+        <option value="Depth-First Search">Depth-First Search</option>
+        <option value="Design">Design</option>
+        <option value="Divide and Conquer">Divide and Conquer</option>
+        <option value="Dynamic Programming">Dynamic Programming</option>
+        <option value="Enumeration">Enumeration</option>
+        <option value="Game Theory">Game Theory</option>
+        <option value="Graph">Graph</option>
+        <option value="Greedy">Greedy</option>
+        <option value="Hash Function">Hash Function</option>
+        <option value="Hash Table">Hash Table</option>
+        <option value="Heap (Priority Queue)">Heap (Priority Queue)</option>
+        <option value="Math">Math</option>
+        <option value="Matrix">Matrix</option>
+        <option value="Memoization">Memoization</option>
+        <option value="Monotonic Queue">Monotonic Queue</option>
+        <option value="Monotonic Stack">Monotonic Stack</option>
+        <option value="Number Theory">Number Theory</option>
+        <option value="Ordered Set">Ordered Set</option>
+        <option value="Prefix Sum">Prefix Sum</option>
+        <option value="Probability and Statistics">Probability and Statistics</option>
+        <option value="Queue">Queue</option>
+        <option value="Recursion">Recursion</option>
+        <option value="Rolling Hash">Rolling Hash</option>
+        <option value="Segment Tree">Segment Tree</option>
+        <option value="Shortest Path">Shortest Path</option>
+        <option value="Simulation">Simulation</option>
+        <option value="Sliding Window">Sliding Window</option>
+        <option value="Sorting">Sorting</option>
+        <option value="Stack">Stack</option>
+        <option value="String">String</option>
+        <option value="String Matching">String Matching</option>
+        <option value="Suffix Array">Suffix Array</option>
+        <option value="Topological Sort">Topological Sort</option>
+        <option value="Tree">Tree</option>
+        <option value="Trie">Trie</option>
+        <option value="Two Pointers">Two Pointers</option>
+        <option value="Union Find">Union Find</option>
+      </select>
       <button type="submit">Search</button>
     </form>
+
+    <p id="status-message" class="status-message" role="status" aria-live="polite"></p>
 
     <div id="results">
       <!-- Search results will appear here -->
     </div>
+
+    <button id="load-more" class="load-more" type="button" hidden>Load more</button>
     <div id="loader" class="loader" style="display: none;"></div>
   </div>
-  
+
   <!-- Modal -->
   <div id="modal" class="modal">
     <div class="modal-content">
@@ -37,7 +94,7 @@
       <h2 id="modal-title">Question Title</h2>
       <br>
       <pre id="modal-description">Full problem description will go here...</pre>
-      <a id="modal-link" href="#" target="_blank">Solve on Platform</a>
+      <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer">Solve on Platform</a>
     </div>
   </div>
   <script src="script.js"></script>

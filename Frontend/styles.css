@@ -256,3 +256,35 @@ button:hover {
   background: #fff;
   color: #222;
 }
+/* Inline status line, replacing the blocking alert() calls */
+.status-message {
+  min-height: 1.2em;
+  margin: 15px 0 5px;
+  font-size: 0.9rem;
+  color: #555;
+}
+.status-message.error {
+  color: #c0392b;
+}
+
+/* "Load more" pagination control */
+.load-more {
+  display: block;
+  width: 100%;
+  margin-top: 15px;
+  padding: 10px;
+  border: 1px solid #007bff;
+  border-radius: 8px;
+  background: white;
+  color: #007bff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.load-more:hover {
+  background: #007bff;
+  color: white;
+}
+.load-more[hidden] {
+  display: none;
+}
